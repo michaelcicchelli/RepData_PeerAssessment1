@@ -7,19 +7,71 @@ output:
 
 
 ## Loading and preprocessing the data
-
-
+data <- read.csv("activitydata.csv")
+head(data)
+str(data)
+names(data)
+data$date <- as.Date(data$date, format = "%Y-%m-%d")
 
 ## What is mean total number of steps taken per day?
+steps <- aggregate(steps ~ date, data = data, sum, na.rm = TRUE)
+head(data)
+str(data)
+par(mfrow = c(1, 1))
+hist(steps$steps, breaks = 20, 
+     main = "Total Number of Steps Taken Each Day",
+     col = "grey", border = "white", xlab = "Step", axes = FALSE)
+axis(1)
+axis(2, las = 1)
 
-
+## Calculate mean and median
+mean(data$steps)
+median(data$steps)
 
 ## What is the average daily activity pattern?
-
-
+avg_step <- aggregate(steps ~ interval, data = data, mean, na.rm = TRUE)
+plot(avg_step$interval, avg_step$steps, type = "l", lwd = 2, col = "navy",
+     main = "Time Series: Avg # of Steps Taken", axes = FALSE,
+     xlab = "5-minute interval", ylab = "Avg # of steps")
+axis(1)
+axis(2, las = 1)
+avg_step$interval[which.max(avg_step$steps)]
 
 ## Imputing missing values
+dim(data[data$steps == "NA", ])[1]
+missing <- data
+for (i in avg_step$interval) {
+    missing[missing$interval == i & is.na(missing$steps), ]$steps <- 
+        avg_step$steps[avg_step$interval == i]
+}
+head(missing)
 
+## Total missing values
+sum(is.na(missing))
+total_step_missing <- aggregate(steps ~ date, data = missing, sum, na.rm = TRUE)
+hist(total_step_imp$steps, breaks = 20, 
+     main = "Total Number of Steps Taken Each Day",
+     col = "grey", border = "white", xlab = "Step", axes = FALSE)
+axis(1)
+axis(2, las = 1)
+
+## Calculate mean and median
+mean(total_step_missing$steps)
+median(total_step_missing$steps)
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+missing$day <- weekdays(missing$date)
+missing$week <- ""
+missing[missing$day == "Saturday" | missing$day == "Sunday", ]$week <- "weekend"
+missing[!(missing$day == "Saturday" | missing$day == "Sunday"), ]$week <- "weekday"
+missing$week <- factor(missing$week)
+
+avg_step_missing <- aggregate(steps ~ interval + week, data = missing, mean)
+library(lattice)
+xyplot(steps ~ interval | week, data = avg_step_missing, type = "l", lwd = 2,
+       layout = c(1, 2), 
+       xlab = "5-Minute Interval", 
+       ylab = "Avg # of steps",
+       main = "Avg # of Steps Taken (across all days)")
+
